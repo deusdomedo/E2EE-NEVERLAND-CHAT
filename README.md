@@ -4,7 +4,7 @@
 ![Encryption](https://img.shields.io/badge/Encryption-AES--256--GCM-green)
 ![Tech Stack](https://img.shields.io/badge/Stack-TS%20%7C%20Tailwind%20%7C%20Vite%20%7C%20Node-blue)
 
-O **E2EE NEVERLAND CHAT** é um sistema de comunicação IRC ultra-privado, projetado sob os princípios de **Offensive Security** e **Zero-Knowledge Architecture**. Diferente de chats convencionais, aqui a privacidade não é uma opção, é a fundação matemática do projeto.
+O **E2EE NEVERLAND CHAT** é um sistema de comunicação IRC ultra-privado, projetado sob os princípios de **Zero-Knowledge Architecture**. Diferente de chats convencionais, aqui a privacidade não é uma opção, é a fundação matemática do projeto.
 
 ## 🛡️ Pilares de Segurança (OPSEC)
 
