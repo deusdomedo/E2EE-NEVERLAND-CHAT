@@ -6,12 +6,13 @@
 
 O **E2EE NEVERLAND CHAT** é um sistema de comunicação IRC ultra-privado, projetado sob os princípios de **Zero-Knowledge Architecture**. Diferente de chats convencionais, aqui a privacidade não é uma opção, é a fundação matemática do projeto.
 
-## 🛡️ Pilares de Segurança (OPSEC)
+### 🛡️ Pilares de Segurança (OPSEC)
 
-* **Criptografia de Ponta a Ponta (E2EE):** Todas as mensagens e arquivos são cifrados via `AES-256-GCM` no navegador do remetente. O servidor atua apenas como um relay cego.
-* **Zero-Knowledge Storage:** A VPS armazena apenas payloads `.enc`. Mesmo em caso de invasão total da infraestrutura, o conteúdo permanece inacessível sem a chave privada.
-* **Proteção Anti-XSS (Hardened CSP):** Implementação rigorosa de **Content Security Policy**, bloqueando execuções `unsafe-inline` e `unsafe-eval` para impedir o roubo de chaves da memória RAM.
-* **Derivação de Chave Robusta:** Utiliza `PBKDF2` com 100.000 iterações e `SALT` dinâmico para garantir resiliência contra ataques de força bruta.
+* **Criptografia de Ponta a Ponta (E2EE):** Implementação baseada na `Web Crypto API`. Todas as mensagens e mídias são cifradas via **AES-256-GCM** antes de deixarem o dispositivo. O servidor opera como um *Zero-Knowledge Relay*, encaminhando pacotes de dados sem nunca possuir as chaves de decodificação.
+* **Zero-Knowledge Storage:** A VPS armazena apenas payloads residuais em formato `.enc` e metadados estruturais. Mesmo com acesso total à infraestrutura ou ao banco de dados, o conteúdo permanece matematicamente inacessível sem a **Chave de Grupo** derivada localmente.
+* **Hardened CSP (Anti-XSS):** Camada de segurança rigorosa via `Content-Security-Policy`. Ao eliminar permissões para `unsafe-inline` e `unsafe-eval`, o sistema bloqueia vetores de injeção que poderiam ser usados para exfiltrar a chave mestre da memória volátil (RAM).
+* **Derivação de Chave (PBKDF2):** A segurança das senhas é reforçada via `PBKDF2` com **100.000 iterações** de `SHA-256` e um **SALT** fixo. Esse processo de *Key Stretching* garante que mesmo senhas comuns gerem chaves de alta entropia, protegendo contra ataques de dicionário e *Rainbow Tables*.
+* **Isolamento de Memória:** Processamento de arquivos via `Blobs` e `Uint8Array`, garantindo que mídias descriptografadas existam apenas durante a sessão ativa, sem persistência automática no sistema de arquivos do dispositivo (mitigação forense).
 
 <img src="https://i.ibb.co.com/ks25HrzG/image.png" width="400">
 
