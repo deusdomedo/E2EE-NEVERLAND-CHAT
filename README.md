@@ -44,7 +44,7 @@ O **E2EE NEVERLAND CHAT** é um ecossistema de comunicação IRC ultra-privado, 
 
 1.  **Clonar o repositório:**
     ```bash
-    git clone https://github.com/deusdomedo/e2ee-neverland-chat.git
+    git clone https://github.com/deusdomedo/E2EE-NEVERLAND-CHAT.git
     ```
 2.  **Instalar dependências:**
     ```bash
