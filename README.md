@@ -4,24 +4,32 @@
 ![Encryption](https://img.shields.io/badge/Encryption-AES--256--GCM-green)
 ![Tech Stack](https://img.shields.io/badge/Stack-TS%20%7C%20Tailwind%20%7C%20Vite%20%7C%20Node-blue)
 
-O **E2EE NEVERLAND CHAT** é um sistema de comunicação IRC ultra-privado, projetado sob os princípios de **Zero-Knowledge Architecture**. Diferente de chats convencionais, aqui a privacidade não é uma opção, é a fundação matemática do projeto.
+O **E2EE NEVERLAND CHAT** é um ecossistema de comunicação IRC ultra-privado, projetado sob os princípios de **Zero-Knowledge Architecture**. Diferente de chats convencionais, aqui a privacidade não é uma opção, é a fundação matemática e criptográfica do projeto.
+
+---
 
 ### 🛡️ Pilares de Segurança (OPSEC)
 
-* **Criptografia de Ponta a Ponta (E2EE):** Implementação baseada na `Web Crypto API`. Todas as mensagens e mídias são cifradas via **AES-256-GCM** antes de deixarem o dispositivo. O servidor opera como um *Zero-Knowledge Relay*, encaminhando pacotes de dados sem nunca possuir as chaves de decodificação.
-* **Zero-Knowledge Storage:** A VPS armazena apenas payloads residuais em formato `.enc` e metadados estruturais. Mesmo com acesso total à infraestrutura ou ao banco de dados, o conteúdo permanece matematicamente inacessível sem a **Chave de Grupo** derivada localmente.
-* **Hardened CSP (Anti-XSS):** Camada de segurança rigorosa via `Content-Security-Policy`. Ao eliminar permissões para `unsafe-inline` e `unsafe-eval`, o sistema bloqueia vetores de injeção que poderiam ser usados para exfiltrar a chave mestre da memória volátil (RAM).
-* **Derivação de Chave (PBKDF2):** A segurança das senhas é reforçada via `PBKDF2` com **100.000 iterações** de `SHA-256` e um **SALT** fixo. Esse processo de *Key Stretching* garante que mesmo senhas comuns gerem chaves de alta entropia, protegendo contra ataques de dicionário e *Rainbow Tables*.
-* **Isolamento de Memória:** Processamento de arquivos via `Blobs` e `Uint8Array`, garantindo que mídias descriptografadas existam apenas durante a sessão ativa, sem persistência automática no sistema de arquivos do dispositivo (mitigação forense).
+* **Criptografia de Ponta a Ponta (E2EE):** Implementação baseada na Web Crypto API. Todas as mensagens e mídias são cifradas via AES-256-GCM antes de deixarem o dispositivo. O servidor opera como um Zero-Knowledge Relay, encaminhando pacotes sem nunca possuir as chaves.
+* **Zero-Knowledge Storage:** A VPS armazena apenas payloads residuais em formato .enc. Mesmo com acesso físico à infraestrutura ou ao banco de dados, o conteúdo permanece matematicamente inacessível sem a Chave de Grupo derivada localmente.
+* **Hardened CSP (Anti-XSS):** Camada de segurança rigorosa via Content-Security-Policy. Ao eliminar permissões para unsafe-inline e unsafe-eval, o sistema bloqueia vetores de injeção que poderiam exfiltrar chaves da memória volátil (RAM).
+* **Derivação de Chave (PBKDF2):** A segurança das senhas é reforçada via PBKDF2 com 100.000 iterações de SHA-256 e um SALT fixo. Esse processo de Key Stretching garante que mesmo senhas comuns gerem chaves de alta entropia.
+* **Isolamento de Memória:** Processamento de arquivos via Blobs e Uint8Array, garantindo que mídias descriptografadas existam apenas na sessão ativa, sem persistência automática no cache de disco do sistema operacional.
 
-<img src="https://i.ibb.co.com/ks25HrzG/image.png" width="400">
+---
+
+<p align="center">
+  <img src="https://i.ibb.co.com/ks25HrzG/image.png" width="25%">
+</p>
+
+---
 
 ## 🚀 Funcionalidades
 
 * 💬 **Chat em Tempo Real:** Engine baseada em WebSockets de baixa latência.
 * 📁 **Mídia Segura:** Processamento de imagens, vídeos e documentos via `Uint8Array` e `Blobs` criptografados.
-* 🔔 **Notificações Stealth:** Alertas sonoros e visuais inteligentes que respeitam o foco da janela.
-* ⌨️ **Indicador de Atividade:** Monitoramento de digitação em tempo real integrado ao socket.
+* 🔔 **Notificações:** Alertas sonoros quando você recebe novas mensagens e está em outra aba.
+* ⌨️ **Indicador de Atividade:** Indicador de digitação em tempo real integrado ao socket.
 
 ## 🛠️ Stack Tecnológica
 
@@ -57,3 +65,4 @@ Este projeto foi desenvolvido para fins de investigação digital e privacidade 
 <p align="center">
   Desenvolvido por <strong>Deusdomedo</strong> | Neverland Investigação Cibernética
 </p>
+
