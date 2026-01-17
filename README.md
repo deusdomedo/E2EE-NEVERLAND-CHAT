@@ -10,11 +10,11 @@ O **E2EE NEVERLAND CHAT** é um ecossistema de comunicação IRC ultra-privado, 
 
 ### 🛡️ Pilares de Segurança (OPSEC)
 
-* **Criptografia de Ponta a Ponta (E2EE):** Implementação baseada na Web Crypto API. Todas as mensagens e mídias são cifradas via AES-256-GCM antes de deixarem o dispositivo. O servidor opera como um Zero-Knowledge Relay, encaminhando pacotes sem nunca possuir as chaves.
-* **Zero-Knowledge Storage:** A VPS armazena apenas payloads residuais em formato .enc. Mesmo com acesso físico à infraestrutura ou ao banco de dados, o conteúdo permanece matematicamente inacessível sem a Chave de Grupo derivada localmente.
-* **Hardened CSP (Anti-XSS):** Camada de segurança rigorosa via Content-Security-Policy. Ao eliminar permissões para unsafe-inline e unsafe-eval, o sistema bloqueia vetores de injeção que poderiam exfiltrar chaves da memória volátil (RAM).
-* **Derivação de Chave (PBKDF2):** A segurança das senhas é reforçada via PBKDF2 com 100.000 iterações de SHA-256 e um SALT fixo. Esse processo de Key Stretching garante que mesmo senhas comuns gerem chaves de alta entropia.
-* **Isolamento de Memória:** Processamento de arquivos via Blobs e Uint8Array, garantindo que mídias descriptografadas existam apenas na sessão ativa, sem persistência automática no cache de disco do sistema operacional.
+* **Criptografia de Ponta a Ponta (E2EE):** Implementação baseada na `Web Crypto API`. Todas as mensagens e mídias são cifradas via `AES-256-GCM` antes de deixarem o dispositivo. O servidor opera como um `Zero-Knowledge Relay`, encaminhando pacotes sem nunca possuir as chaves.
+* **Zero-Knowledge Storage:** A VPS armazena apenas payloads residuais em formato `.enc`. Mesmo com acesso físico à infraestrutura ou ao banco de dados, o conteúdo permanece matematicamente inacessível sem a `Chave de Grupo` derivada localmente.
+* **Hardened CSP (Anti-XSS):** Camada de segurança rigorosa via `Content-Security-Policy`. Ao eliminar permissões para `unsafe-inline` e `unsafe-eval`, o sistema bloqueia vetores de injeção que poderiam exfiltrar chaves da memória volátil (`RAM`).
+* **Derivação de Chave (PBKDF2):** A segurança das senhas é reforçada via `PBKDF2` com `100.000 iterações` de `SHA-256` e um `SALT` fixo. Esse processo de `Key Stretching` garante que mesmo senhas comuns gerem chaves de alta entropia.
+* **Isolamento de Memória:** Processamento de arquivos via `Blobs` e `Uint8Array`, garantindo que mídias descriptografadas existam apenas na sessão ativa, sem persistência automática no cache de disco do sistema operacional.
 
 ---
 
