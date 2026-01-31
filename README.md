@@ -2,67 +2,58 @@
 
 ![Security Badge](https://img.shields.io/badge/Security-OPSEC%20Ready-red)
 ![Encryption](https://img.shields.io/badge/Encryption-AES--256--GCM-green)
-![Tech Stack](https://img.shields.io/badge/Stack-TS%20%7C%20Tailwind%20%7C%20Vite%20%7C%20Node-blue)
+![Status](https://img.shields.io/badge/Status-Operational-blue)
 
-O **E2EE NEVERLAND CHAT** é um ecossistema de comunicação IRC ultra-privado, projetado sob os princípios de **Zero-Knowledge Architecture**. Diferente de chats convencionais, aqui a privacidade não é uma opção, é a fundação matemática e criptográfica do projeto.
-
----
-
-### 🛡️ Pilares de Segurança (OPSEC)
-
-* **Criptografia de Ponta a Ponta (E2EE):** Implementação baseada na `Web Crypto API`. Todas as mensagens e mídias são cifradas via `AES-256-GCM` antes de deixarem o dispositivo. O servidor opera como um `Zero-Knowledge Relay`, encaminhando pacotes sem nunca possuir as chaves.
-* **Zero-Knowledge Storage:** A VPS armazena apenas payloads residuais em formato `.enc`. Mesmo com acesso físico à infraestrutura ou ao banco de dados, o conteúdo permanece matematicamente inacessível sem a `Chave de Grupo` derivada localmente.
-* **Hardened CSP (Anti-XSS):** Camada de segurança rigorosa via `Content-Security-Policy`. Ao eliminar permissões para `unsafe-inline` e `unsafe-eval`, o sistema bloqueia vetores de injeção que poderiam exfiltrar chaves da memória volátil (`RAM`).
-* **Derivação de Chave (PBKDF2):** A segurança das senhas é reforçada via `PBKDF2` com `100.000 iterações` de `SHA-256` e um `SALT` fixo. Esse processo de `Key Stretching` garante que mesmo senhas comuns gerem chaves de alta entropia.
-* **Isolamento de Memória:** Processamento de arquivos via `Blobs` e `Uint8Array`, garantindo que mídias descriptografadas existam apenas na sessão ativa, sem persistência automática no cache de disco do sistema operacional.
+O **NEVERLAND** é uma plataforma de comunicação efêmera baseada em arquitetura de **Conhecimento Zero (Zero-Knowledge)**. O sistema garante que a privacidade não dependa da confiança no administrador, mas sim da criptografia aplicada diretamente no cliente.
 
 ---
 
-<p align="center">
-  <img src="https://i.ibb.co.com/ks25HrzG/image.png" width="25%">
-</p>
+## ⚡ Funcionalidades Ativas
+
+### 🛡️ Criptografia de Camada Total (Full-Payload)
+Diferente de outros chats, o Neverland cifra o pacote completo de dados antes do envio. Isso inclui:
+* **Conteúdo da Mensagem** (Texto e links).
+* **Metadados de Identidade** (Seu Nick, sua cor e seus efeitos visuais).
+* **Timestamp e Identificadores** (Hora do envio e IDs de sessão).
+> Um interceptador de rede verá apenas um bloco binário de ruído, sem saber quem enviou ou o que foi dito.
+
+### 🖼️ Sistema de Mídia e Stickers
+O chat possui suporte nativo para comunicação visual sem comprometer a segurança:
+* **Neural Stickers:** Menu rápido de figurinhas temáticas (Makima, Saber, etc.) pré-carregadas.
+* **Upload Temporário:** Integração com API de armazenamento efêmero. Arquivos são enviados, criptografados no link e têm vida útil de 24h.
+* **Inline Rendering:** Visualização direta de imagens e stickers dentro da timeline do chat com proteção de overflow.
+
+### 🎭 Identidade Visual Dinâmica
+Os usuários possuem controle total sobre sua presença no "Abismo":
+* **Cores Customizadas:** Seletor de cores via paleta hexadecimal para o Nick e bordas de mensagens.
+* **Efeitos de Status:** Comandos secretos para aplicar estados visuais permanentes no seu perfil (como o `effect-fire` e `effect-glitch`).
+* **Visual Hacker:** Opção de envio de mensagens com o comando `/hacker`, que exibe uma animação de decodificação em tempo real para os destinatários.
+
+### ☣️ Protocolo de Incineração (/burn)
+O sistema conta com uma função de autodestruição física:
+* Ao executar o comando `/burn`, o servidor localiza o arquivo `.enc` da sala e o deleta permanentemente do disco.
+* O comando dispara um sinal de limpeza para todos os clientes conectados, removendo o histórico da memória RAM dos navegadores instantaneamente.
 
 ---
 
-## 🚀 Funcionalidades
+## 🛠️ Arquitetura do Sistema
 
-* 💬 **Chat em Tempo Real:** Engine baseada em WebSockets de baixa latência.
-* 📁 **Mídia Segura:** Processamento de imagens, vídeos e documentos via `Uint8Array` e `Blobs` criptografados.
-* 🔔 **Notificações:** Alertas sonoros quando você recebe novas mensagens e está em outra aba.
-* ⌨️ **Indicador de Atividade:** Indicador de digitação em tempo real integrado ao socket.
-
-## 🛠️ Stack Tecnológica
-
-* **Frontend:** React + **TypeScript** + **Vite** (Performance e Tipagem Segura).
-* **Styling:** **Tailwind CSS** (Arquitetura Utilitária e Design Dark).
-* **Backend:** **Node.js** + Socket.io (Stream interno de alta performance).
-* **Crypto API:** Web Crypto API (`window.crypto.subtle`).
-
-
-
-## 🔧 Instalação e Deploy
-
-1.  **Clonar o repositório:**
-    ```bash
-    git clone https://github.com/deusdomedo/E2EE-NEVERLAND-CHAT.git
-    ```
-2.  **Instalar dependências:**
-    ```bash
-    npm install
-    ```
-3.  **Configuração de Segurança:**
-    Altere a constante `SALT` no core do projeto para uma string única antes do deploy na VPS.
-4.  **Build e Start:**
-    ```bash
-    npm run build
-    ```
-
-## ⚠️ Aviso Legal (Disclaimer)
-
-Este projeto foi desenvolvido para fins de investigação digital e privacidade extrema. A segurança final depende do comportamento do usuário. **Recomenda-se o uso de chaves complexas e navegação em modo incôgnito para mitigar rastros forenses de memória local (Blobs/Cache).**
+| Componente | Implementação |
+| :--- | :--- |
+| **Real-time Core** | Socket.io com isolamento de salas por hashes SHA-256. |
+| **Crypto Engine** | Web Crypto API (AES-GCM 256-bit) com derivação de chave via PBKDF2. |
+| **Storage Layer** | Filesystem persistente via arquivos `.enc` (Cofres Cifrados). |
+| **Anti-Abuse** | Lógica de Anti-Flood e Anti-DDOS implementada no servidor e no cliente. |
+| **UI/UX** | React + Tailwind com motor de animação Framer Motion e efeitos CRT. |
 
 ---
-<p align="center">
-  Desenvolvido por <strong>Deusdomedo</strong> | Neverland Investigação Cibernética
-</p>
 
+## 🕹️ Comandos de Interação Global
+
+Gatilhos que afetam a interface de todos os usuários na sala:
+
+* `/expurgo`: Dispara um alerta sonoro e visual de emergência com tremor de tela.
+* `/win`: Ativa a estética de vitória com chamas e brilho intenso na interface.
+* `/jasabe`: Ativa o modo de intrusão hacker com scanlines de terminal.
+
+---
