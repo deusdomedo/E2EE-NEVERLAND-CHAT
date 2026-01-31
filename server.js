@@ -1,210 +1,147 @@
-const express = require("express");
-const http = require("http");
-const socketIo = require("socket.io");
-const multer = require("multer");
-const path = require("path");
-const helmet = require("helmet");
-const rateLimit = require("express-rate-limit");
-const sqlite3 = require("sqlite3").verbose();
-const crypto = require("crypto");
-const { JSDOM } = require("jsdom");
-const createDOMPurify = require("dompurify");
-const fs = require("fs");
+import express from 'express';
+import { createServer } from 'http';
+import { Server } from 'socket.io';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import multer from 'multer';
+import axios from 'axios';
+import FormData from 'form-data';
+import cors from 'cors';
 
-const window = new JSDOM("").window;
-const DOMPurify = createDOMPurify(window);
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
+const httpServer = createServer(app);
+const io = new Server(httpServer, { cors: { origin: "*" }, path: '/socket.io' });
 
-const uploadDir = path.join(__dirname, "uploads");
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-}
+app.use(cors(), express.json());
 
-// 1. HARDENING DE CABEÇALHOS
-app.disable("x-powered-by");
-app.use(
-  helmet({
-    contentSecurityPolicy: false,
-    crossOriginResourcePolicy: { policy: "cross-origin" },
-    hidePoweredBy: true,
-  })
-);
+const upload = multer({ storage: multer.memoryStorage() });
+const VAULT = path.join(__dirname, 'vault');
+if (!fs.existsSync(VAULT)) fs.mkdirSync(VAULT);
 
-// 2. RATE LIMITING
-const globalLimiter = rateLimit({
-  windowMs: 1 * 60 * 1000,
-  max: 500,
-  message: "Acesso limitado.",
-});
-app.use(globalLimiter);
+// A senha mestra para provar que merece ter um nick
+const MASTER_PASS = "lealdade"; 
 
-// 3. PROTEÇÃO DE DIRETÓRIO
-const safeOptions = {
-  dotfiles: "ignore",
-  index: "index.html",
-  setHeaders: (res) => res.set("Server", "Ghost"),
-};
-app.use(express.static(path.join(__dirname, "public"), safeOptions));
+// --- CONFIGURAÇÃO ANTI-FLOOD ---
+const FLOOD_LIMIT = 5; // Máximo de mensagens por janela
+const FLOOD_WINDOW = 2000; // Janela de 2 segundos
+const userMessageLog = new Map(); // Mapa para monitorar timestamps por socket
 
-app.get("/view-file/:id", (req, res) => {
-  const fileId = req.params.id.replace(/[^a-f0-9]/g, "");
-  const fullPath = path.join(uploadDir, fileId);
-
-  // Importante: remover CSP restritiva para permitir que o fetch do script.js leia o arquivo
-  res.setHeader("X-Content-Type-Options", "nosniff");
-  res.sendFile(fullPath);
+app.post('/api/upload', upload.single('fileToUpload'), async (req, res) => {
+    try {
+        if (!req.file) return res.status(400).send("No file");
+        const form = new FormData();
+        form.append('reqtype', 'fileupload');
+        form.append('time', '24h');
+        form.append('fileToUpload', req.file.buffer, { filename: req.file.originalname, contentType: req.file.mimetype });
+        const response = await axios.post('https://litterbox.catbox.moe/resources/internals/api.php', form, { headers: form.getHeaders(), timeout: 60000 });
+        res.send(response.data);
+    } catch (error) { res.status(500).send("Upload failed"); }
 });
 
-const server = http.createServer(app);
 
-// 4. WEBSOCKET
-const io = socketIo(server, {
-  path: "/v1/api/internal/stream",
-  cors: { origin: "*" },
-});
 
-// --- 4.1 CORREÇÃO PARA O ERRO 404 ---
-app.get("/v1/api/internal/stream/socket.io.js", (req, res) => {
-  res.sendFile(
-    path.resolve(__dirname, "node_modules/socket.io/client-dist/socket.io.js")
-  );
-});
+io.on('connection', (socket) => {
+    // Inicializa log de mensagens para o novo socket
+    userMessageLog.set(socket.id, []);
 
-// 5. BANCO DE DADOS
-const db = new sqlite3.Database("./database.sqlite");
-db.serialize(() => {
-  db.run(`CREATE TABLE IF NOT EXISTS messages (
-        id INTEGER PRIMARY KEY AUTOINCREMENT, 
-        nick TEXT, payload TEXT, time TEXT, type TEXT, 
-        filePath TEXT, fileType TEXT, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
-    )`);
-});
-
-setInterval(() => {
-  db.run("DELETE FROM messages WHERE timestamp <= datetime('now', '-5 days')");
-}, 3600000);
-
-// 6. UPLOAD ANTI-RCE (Ajustado para arquivos criptografados)
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, uploadDir);
-  },
-  filename: (req, file, cb) => {
-    cb(null, crypto.randomBytes(16).toString("hex"));
-  },
-});
-
-const upload = multer({
-  storage: storage,
-  limits: { fileSize: 20 * 1024 * 1024 }, // Aumentado para 20MB pois a criptografia aumenta o tamanho
-  fileFilter: (req, file, cb) => {
-    // Como o arquivo vem criptografado pelo script.js como um Blob/JSON,
-    // liberamos o filtro de tipo, pois o arquivo já é inofensivo (binário cifrado)
-    cb(null, true);
-  },
-});
-
-app.post("/upload", upload.single("file"), (req, res) => {
-  if (!req.file) return res.status(400).json({ error: "Erro no upload." });
-  res.json({
-    filePath: `/view-file/${req.file.filename}`,
-    fileType: req.body.fileType || "application/octet-stream", // Opcional: receber o tipo original
-  });
-});
-
-// 7. LÓGICA DE COMUNICAÇÃO
-let onlineUsers = {};
-
-function getFormattedTime() {
-  return new Date().toLocaleTimeString("pt-BR", {
-    timeZone: "America/Sao_Paulo",
-    hour12: false,
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-  });
-}
-
-io.on("connection", (socket) => {
-  const myNick = generateRandomJapaneseNick();
-  onlineUsers[socket.id] = myNick;
-
-  socket.emit("init-session", { nick: myNick });
-
-  db.all(
-    "SELECT * FROM (SELECT * FROM messages ORDER BY id DESC LIMIT 50) ORDER BY id ASC",
-    (err, rows) => {
-      if (!err) rows.forEach((msg) => socket.emit("newMessage", msg));
-    }
-  );
-
-  io.emit("updateOnlineUsers", Object.values(onlineUsers));
-
-  socket.on("sendMessage", (data) => {
-    const timeString = getFormattedTime();
-    const userNick = onlineUsers[socket.id];
-
-    // Salva no banco (seja texto ou ponteiro de arquivo)
-    db.run(
-      `INSERT INTO messages (nick, payload, time, type, filePath, fileType) VALUES (?, ?, ?, ?, ?, ?)`,
-      [
-        userNick,
-        data.payload,
-        timeString,
-        data.type || "text",
-        data.filePath || null,
-        data.fileType || null,
-      ]
-    );
-
-    io.emit("newMessage", {
-      nick: userNick,
-      payload: data.payload,
-      time: timeString,
-      type: data.type || "text",
-      filePath: data.filePath || null,
-      fileType: data.fileType || null,
+    // Registro inicial do usuário
+    socket.on('register-user', (data) => { 
+        socket.userData = { ...data, id: socket.id }; 
+        updateOnline(); 
     });
-  });
 
-  socket.on("changeNick", (newNick) => {
-    const clean = DOMPurify.sanitize(newNick)
-      .replace(/[^a-zA-Z0-9]/g, "")
-      .substring(0, 15);
-    if (clean) {
-      onlineUsers[socket.id] = clean;
-      io.emit("updateOnlineUsers", Object.values(onlineUsers));
-      socket.emit("updateNick", clean);
+    socket.on('join-channel', (hash) => {
+        socket.join(hash);
+        const file = path.join(VAULT, `${hash}.enc`);
+        if (fs.existsSync(file)) {
+            const history = fs.readFileSync(file, 'utf-8').trim().split('\n').map(line => {
+                try { return JSON.parse(line); } catch (e) { return null; }
+            }).filter(Boolean);
+            socket.emit('history', history);
+        }
+    });
+
+    socket.on('send-message', ({ channelHash, payload, isBurnCommand }) => {
+        // --- LÓGICA ANTI-FLOOD/DDOS NO BACKEND ---
+        const now = Date.now();
+        const timestamps = userMessageLog.get(socket.id) || [];
+        
+        // Filtra timestamps dentro da janela permitida
+        const recentMessages = timestamps.filter(ts => now - ts < FLOOD_WINDOW);
+        
+        if (recentMessages.length >= FLOOD_LIMIT) {
+            console.warn(`[WARN] Flood detectado do socket: ${socket.id}. Bloqueando pacote.`);
+            // Opcional: Desconectar o engraçadinho
+            // socket.disconnect(); 
+            return; 
+        }
+
+// COMANDO DE AUTODESTRUIÇÃO
+    if (isBurnCommand === true) {
+        const file = path.join(VAULT, `${channelHash}.enc`);
+        if (fs.existsSync(file)) {
+            fs.unlinkSync(file); // Apaga o arquivo fisicamente
+            console.log(`[BURN] Histórico da sala ${channelHash} foi incinerado.`);
+            
+            // Avisa a todos na sala para limparem suas telas
+            io.to(channelHash).emit('history', []); 
+            return; 
+        }
     }
-  });
 
-  socket.on("disconnect", () => {
-    delete onlineUsers[socket.id];
-    io.emit("updateOnlineUsers", Object.values(onlineUsers));
-  });
+        // Adiciona o timestamp atual ao log do usuário
+        recentMessages.push(now);
+        userMessageLog.set(socket.id, recentMessages);
+
+        // --- SALVAMENTO E TRANSMISSÃO (Metadados já estão dentro do payload cifrado) ---
+        const file = path.join(VAULT, `${channelHash}.enc`);
+        
+        // O servidor apenas salva o "envelope" (iv + ciphertext) sem saber o que tem dentro
+        fs.appendFileSync(file, JSON.stringify(payload) + '\n');
+        
+        // Retransmite para os outros usuários na sala
+        io.to(channelHash).emit('new-message', payload);
+    });
+
+    // Validação de Identidade
+    socket.on('validate-nick-pass', ({ pass }, callback) => {
+        if (pass === MASTER_PASS) {
+            if (callback) callback({ success: true });
+        } else {
+            if (callback) callback({ success: false });
+        }
+    });
+
+    // Sistema de Reação e Votos
+    socket.on('cast-vote', ({ channelHash, msgId, optionIndex }) => {
+        io.to(channelHash).emit('update-poll', { msgId, optionIndex });
+    });
+
+    socket.on('add-reaction', ({ channelHash, msgId, emoji }) => {
+        io.to(channelHash).emit('update-reaction', { msgId, emoji });
+    });
+
+    socket.on('disconnect', () => {
+        userMessageLog.delete(socket.id); // Limpa rastro de flood ao sair
+        updateOnline();
+    });
+
+    function updateOnline() {
+        const users = Array.from(io.sockets.sockets.values())
+            .map(s => s.userData)
+            .filter(Boolean);
+        io.emit('online-list', users);
+    }
 });
 
-function generateRandomJapaneseNick() {
-  const all = [
-    "一",
-    "二",
-    "三",
-    "あ",
-    "い",
-    "う",
-    "ア",
-    "イ",
-    "ウ",
-    "木",
-    "火",
-    "土",
-  ];
-  let n = "";
-  for (let i = 0; i < 5; i++) n += all[Math.floor(Math.random() * all.length)];
-  return n;
-}
-
-const PORT = 6431;
-server.listen(PORT, "127.0.0.1", () => {
-  console.log(`[ZERO-KNOWLEDGE-SERVER] Ativo em 127.0.0.1:${PORT}`);
+const PORT = 3000;
+httpServer.listen(PORT, '0.0.0.0', () => {
+    console.log(`
+    🌑 UNDERLAND 
+    PORT: ${PORT}
+    MASTER_KEY: ${MASTER_PASS}
+    ANTI-FLOOD: ENABLED (${FLOOD_LIMIT} msg / ${FLOOD_WINDOW}ms)
+    `);
 });
