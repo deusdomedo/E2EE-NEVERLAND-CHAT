@@ -4,7 +4,7 @@
 ![Encryption](https://img.shields.io/badge/Encryption-AES--256--GCM-green)
 ![Status](https://img.shields.io/badge/Status-Operational-blue)
 
-O **NEVERLAND** é uma plataforma de comunicação efêmera baseada em arquitetura de **Conhecimento Zero (Zero-Knowledge)**. O sistema garante que a privacidade não dependa da confiança no administrador, mas sim da criptografia aplicada diretamente no cliente.
+O **🥀 E2EE NEVERLAND CHAT** é uma plataforma de comunicação efêmera baseada em arquitetura de **Conhecimento Zero (Zero-Knowledge)**. O sistema garante que a privacidade não dependa da confiança no administrador, mas sim da criptografia aplicada diretamente no cliente.
 
 ---
 
